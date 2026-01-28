@@ -1,40 +1,44 @@
 echo "Configuring and building Thirdparty/DBoW2 ..."
 
 cd Thirdparty/DBoW2
-mkdir build
+rm -rf build && mkdir build # Clean old failed states
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+make -j$(nproc)
 
 cd ../../g2o
 
 echo "Configuring and building Thirdparty/g2o ..."
 
-mkdir build
+rm -rf build && mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+make -j$(nproc)
 
 cd ../../Sophus
 
 echo "Configuring and building Thirdparty/Sophus ..."
 
-mkdir build
+rm -rf build && mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+make -j$(nproc)
 
 cd ../../../
 
 echo "Uncompress vocabulary ..."
 
 cd Vocabulary
-tar -xf ORBvoc.txt.tar.gz
+# Only uncompress if the .txt file doesn't exist yet to save time
+if [ ! -f "ORBvoc.txt" ]; then
+    tar -xf ORBvoc.txt.tar.gz
+fi
 cd ..
 
 echo "Configuring and building ORB_SLAM3 ..."
 
-mkdir build
+rm -rf build && mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j4
+# Added the prefix path here to solve the Pangolin/OpenGL mismatch
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+make -j$(nproc)

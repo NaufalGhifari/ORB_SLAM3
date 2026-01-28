@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 project(ORB_SLAM3)
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -12,21 +12,33 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 
-# Check C++11 or C++0x support
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-   add_definitions(-DCOMPILEDWITHC11)
-   message(STATUS "Using flag -std=c++11.")
-elseif(COMPILER_SUPPORTS_CXX0X)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   add_definitions(-DCOMPILEDWITHC0X)
-   message(STATUS "Using flag -std=c++0x.")
-else()
-   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
+# C++14 to support modern Pangolin/sigslot
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Kept this definition so the code that checks for it still works
+add_definitions(-DCOMPILEDWITHC11)
+
+# Ignore warnings
+add_definitions("-w")
+
+# Note: uncomment code below if using C++11
+## Check C++11 or C++0x support
+#include(CheckCXXCompilerFlag)
+#CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+#CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+#if(COMPILER_SUPPORTS_CXX11)
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#   add_definitions(-DCOMPILEDWITHC11)
+#   message(STATUS "Using flag -std=c++11.")
+#elseif(COMPILER_SUPPORTS_CXX0X)
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+#   add_definitions(-DCOMPILEDWITHC0X)
+#   message(STATUS "Using flag -std=c++0x.")
+#else()
+#   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+#endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
@@ -39,6 +51,19 @@ MESSAGE("OPENCV VERSION:")
 MESSAGE(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
+
+# 1. Find OpenGL
+find_package(OpenGL REQUIRED)
+
+# 2. Modern CMake Target Fix
+if(NOT TARGET OpenGL::OpenGL)
+    add_library(OpenGL::OpenGL INTERFACE IMPORTED)
+    set_target_properties(OpenGL::OpenGL PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${OPENGL_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${OPENGL_INCLUDE_DIR}"
+    )
+endif()
+
 find_package(Pangolin REQUIRED)
 find_package(realsense2)
 
@@ -119,6 +144,7 @@ target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
+${OPENGL_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
